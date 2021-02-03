@@ -1,0 +1,62 @@
+service: sentiment-analysis-serverless
+
+plugins:
+  - serverless-bundle
+  - serverless-pseudo-parameters
+  - serverless-step-functions
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  memorySize: 256
+  stage: ${opt:stage, 'dev'}
+  region: us-east-1
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "*"
+      Resource:
+        - "*"
+
+functions:
+  s3Trigger:
+    handler: src/handlers/s3Trigger.handler
+    environment:
+      stage: ${self:provider.stage}
+      statemachine_arn: arn:aws:states:us-east-1:811076253933:stateMachine:hellostepfunc1
+    events:
+      - s3:
+          bucket: sentiment-analysis-serverless-source
+          event: s3:ObjectCreated:*
+  readFeedback:
+    handler: src/handlers/readFeedback.handler
+  computeSentiment:
+    handler: src/handlers/computeSentiment.handler
+
+stepFunctions:
+  stateMachines:
+    hellostepfunc1:
+      name: "hellostepfunc1"
+      definition:
+        Comment: "Read CSV files and do sentiment analysis"
+        StartAt: ReadFeedbackFromS3
+        States:
+          ReadFeedbackFromS3:
+            Type: Task
+            Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${self:provider.stage}-readFeedback"
+            Next: ComputeSentiment
+          ComputeSentiment:
+            Type: Task
+            Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${self:provider.stage}-computeSentiment"
+            End: true
+
+resources:
+  Outputs:
+    Proxy:
+      Description: The ARN of the state machine
+      Value:
+        Ref: Hellostepfunc1
+
+custom:
+  bundle:
+    linting: false
