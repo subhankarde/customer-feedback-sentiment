@@ -1,9 +1,9 @@
 import AWS from 'aws-sdk';
 const comprehend = new AWS.Comprehend();
 async function computeSentiment(event, context) {
-
+    //Date, Account Number
     const listOftext = event.map((a) => a.Text)
-    console.log(listOftext);
+    
     const sentimentParams = {
         LanguageCode: 'en',
         TextList: listOftext

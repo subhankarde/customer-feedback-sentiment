@@ -28,6 +28,8 @@ functions:
       - s3:
           bucket: sentiment-analysis-serverless-source
           event: s3:ObjectCreated:*
+          rules:
+            - suffix: .csv
   readFeedback:
     handler: src/handlers/readFeedback.handler
   computeSentiment:
@@ -51,11 +53,11 @@ stepFunctions:
             End: true
 
 resources:
-  Outputs:
-    Proxy:
-      Description: The ARN of the state machine
-      Value:
-        Ref: Hellostepfunc1
+  Resources:
+    ProcessedBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: sentiment-analysis-serverless-destination
 
 custom:
   bundle:
