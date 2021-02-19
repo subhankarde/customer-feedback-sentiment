@@ -34,6 +34,8 @@ functions:
     handler: src/handlers/readFeedback.handler
   computeSentiment:
     handler: src/handlers/computeSentiment.handler
+  iterator:
+    handler: src/handlers/iterator.handler
 
 stepFunctions:
   stateMachines:
@@ -46,10 +48,54 @@ stepFunctions:
           ReadFeedbackFromS3:
             Type: Task
             Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${self:provider.stage}-readFeedback"
-            Next: ComputeSentiment
-          ComputeSentiment:
-            Type: Task
-            Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${self:provider.stage}-computeSentiment"
+            Next: ProcessAllItems
+          ProcessAllItems:
+            Type: Parallel
+            InputPath: $
+            Branches:
+              - StartAt: ConfigureCountEN
+                States:
+                  ConfigureCountEN:
+                    Type: Pass
+                    Parameters:
+                      records.$: $.en
+                      counter: 10
+                    #InputPath: $.en
+                    #OutputPath: $.iterator
+                    ResultPath: $.iterator
+                    Next: CurateData
+                  CurateData:
+                    Type: Pass
+                    OutputPath: $.iterator
+                    Next: Iterator
+                  Iterator:
+                    Type: Task
+                    Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${self:provider.stage}-iterator"
+                    Next: IsCountReached
+                  IsCountReached:
+                    Type: Choice
+                    Choices:
+                      - Variable: $.continue
+                        BooleanEquals: true
+                        Next: ComputeSentimentEN
+                    Default: DefaultState
+                  ComputeSentimentEN:
+                    Type: Task
+                    Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${self:provider.stage}-computeSentiment"
+                    ResultPath: $.result
+                    Next: Iterator
+                  DefaultState:
+                    Type: Pass
+                    Parameters:
+                      continue.$: $.continue
+                    End: true
+              - StartAt: ComputeSentimentES
+                States:
+                  ComputeSentimentES:
+                    InputPath: $.es
+                    Type: Task
+                    Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${self:provider.stage}-computeSentiment"
+                    End: true
             End: true
 
 resources:
