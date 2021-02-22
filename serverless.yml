@@ -23,7 +23,8 @@ functions:
     handler: src/handlers/s3Trigger.handler
     environment:
       stage: ${self:provider.stage}
-      statemachine_arn: arn:aws:states:us-east-1:811076253933:stateMachine:hellostepfunc1
+      statemachine_arn: arn:aws:states:#{AWS::Region}:#{AWS::AccountId}:stateMachine:hellostepfunc1
+      
     events:
       - s3:
           bucket: sentiment-analysis-serverless-source
@@ -60,8 +61,7 @@ stepFunctions:
                     Parameters:
                       records.$: $.en
                       counter: 10
-                    #InputPath: $.en
-                    #OutputPath: $.iterator
+                      languageCode: "en"
                     ResultPath: $.iterator
                     Next: CurateData
                   CurateData:
@@ -95,6 +95,15 @@ stepFunctions:
                     InputPath: $.es
                     Type: Task
                     Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${self:provider.stage}-computeSentiment"
+                    Catch:
+                      - ErrorEquals:
+                          - States.ALL
+                        ResultPath: $.error
+                        Next: Fallback
+                    End: true
+                  Fallback:
+                    Type: Pass
+                    Result: ComputeSentimentES, AWS Step Functions!
                     End: true
             End: true
 

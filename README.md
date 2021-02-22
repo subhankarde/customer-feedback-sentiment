@@ -6,7 +6,8 @@
 # Pending
 
 - Writing to dynamoDB
-- Environment Variable
+- Environment Variable/properties
+- Exception handling & input validation
 - IAM Policies
 - Don't recreate a resource if already exists
 

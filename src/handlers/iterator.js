@@ -23,6 +23,7 @@ function iterator(event, context, callback) {
         processRecords,
         counter: count,
         records,
+        languageCode: event.languageCode,
         continue: contStep
     })
 }
