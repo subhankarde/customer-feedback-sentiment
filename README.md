@@ -8,6 +8,13 @@
 - The processed files are copied to another S3 bucket
 - The number of documents in the request has a limit of 25
 
+### Sample CSV file
+
+datetime,account_number,language_code,text
+
+- 2/12/01,333,en,you are awesome
+- 2/13/01,375,es,Eres asombroso
+
 ## Future enhancement
 
 - Generate customer sentiment from the call recording with the IVR
