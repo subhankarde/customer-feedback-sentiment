@@ -11,6 +11,9 @@ provider:
   memorySize: 256
   stage: ${opt:stage, 'dev'}
   region: us-east-1
+  environment:
+    CUSTOMER_FEEDBACK_TABLE: ${self:custom.CustomerFeedbackTable.name}
+    NUMBER_OF_RECORDS_TO_PROCESS: 10 #Max is 25 records, hard limit by AWS Comprehend batch
   iamRoleStatements:
     - Effect: "Allow"
       Action:
@@ -24,7 +27,6 @@ functions:
     environment:
       stage: ${self:provider.stage}
       statemachine_arn: arn:aws:states:#{AWS::Region}:#{AWS::AccountId}:stateMachine:hellostepfunc1
-      
     events:
       - s3:
           bucket: sentiment-analysis-serverless-source
@@ -60,50 +62,67 @@ stepFunctions:
                     Type: Pass
                     Parameters:
                       records.$: $.en
-                      counter: 10
                       languageCode: "en"
                     ResultPath: $.iterator
                     Next: CurateData
                   CurateData:
                     Type: Pass
                     OutputPath: $.iterator
-                    Next: Iterator
-                  Iterator:
+                    Next: IteratorEN
+                  IteratorEN:
                     Type: Task
                     Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${self:provider.stage}-iterator"
-                    Next: IsCountReached
-                  IsCountReached:
+                    Next: IsCountReachedEN
+                  IsCountReachedEN:
                     Type: Choice
                     Choices:
                       - Variable: $.continue
                         BooleanEquals: true
                         Next: ComputeSentimentEN
-                    Default: DefaultState
+                    Default: DefaultStateEN
                   ComputeSentimentEN:
                     Type: Task
                     Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${self:provider.stage}-computeSentiment"
                     ResultPath: $.result
-                    Next: Iterator
-                  DefaultState:
+                    Next: IteratorEN
+                  DefaultStateEN:
                     Type: Pass
                     Parameters:
                       continue.$: $.continue
                     End: true
-              - StartAt: ComputeSentimentES
+              - StartAt: ConfigureCountES
                 States:
+                  ConfigureCountES:
+                    Type: Pass
+                    Parameters:
+                      records.$: $.es
+                      languageCode: es
+                    ResultPath: $.iterator
+                    Next: CurateDataES
+                  CurateDataES:
+                    Type: Pass
+                    OutputPath: $.iterator
+                    Next: IteratorES
+                  IteratorES:
+                    Type: Task
+                    Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${self:provider.stage}-iterator"
+                    Next: IsCountReachedES
+                  IsCountReachedES:
+                    Type: Choice
+                    Choices:
+                      - Variable: $.continue
+                        BooleanEquals: true
+                        Next: ComputeSentimentES
+                    Default: DefaultStateES
                   ComputeSentimentES:
-                    InputPath: $.es
                     Type: Task
                     Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${self:provider.stage}-computeSentiment"
-                    Catch:
-                      - ErrorEquals:
-                          - States.ALL
-                        ResultPath: $.error
-                        Next: Fallback
-                    End: true
-                  Fallback:
+                    ResultPath: $.result
+                    Next: IteratorES
+                  DefaultStateES:
                     Type: Pass
-                    Result: ComputeSentimentES, AWS Step Functions!
+                    Parameters:
+                      continue.$: $.continue
                     End: true
             End: true
 
@@ -113,7 +132,24 @@ resources:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: sentiment-analysis-serverless-destination
+    FeedbackDynamoDbTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: FeedbackResultTable-${self:provider.stage}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
 
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
 custom:
+  CustomerFeedbackTable:
+    name: !Ref FeedbackDynamoDbTable
+    arn: !GetAtt FeedbackDynamoDbTable.Arn
   bundle:
     linting: false
