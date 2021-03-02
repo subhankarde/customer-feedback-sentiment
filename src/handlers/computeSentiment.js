@@ -26,7 +26,7 @@ async function computeSentiment(event, context) {
         })
     }
 
-    results.forEach(function (result) {
+    for (const result of results) {
         const params = {
             TableName: process.env.CUSTOMER_FEEDBACK_TABLE,
             Item: {
@@ -38,14 +38,14 @@ async function computeSentiment(event, context) {
                 languageCode: event.languageCode
             }
         };
-        dynamoDBClient.put(params, function (err, data) {
-            if (err) {
-                console.error("Unable to add movie", result.accountNumber, ". Error JSON:", JSON.stringify(err, null, 2));
-            } else {
-                console.log("PutItem succeeded:", result.accountNumber);
-            }
-        });
-    });
+        try {
+            await dynamoDBClient.put(params).promise();
+        } catch (error) {
+            console.error(error)
+            throw new httpErrors.InternalServerError(error)
+        }
+
+    }
 
     return {
         statusCode: 201,
