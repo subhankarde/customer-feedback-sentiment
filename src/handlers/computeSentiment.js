@@ -6,7 +6,6 @@ const dynamoDBClient = new AWS.DynamoDB.DocumentClient()
 async function computeSentiment(event, context) {
 
     const listOftext = event.processRecords.map((record) => record.text)
-
     const sentimentParams = {
         LanguageCode: event.languageCode,
         TextList: listOftext
@@ -26,6 +25,7 @@ async function computeSentiment(event, context) {
         })
     }
 
+    //Put feedback records into DynamoDB
     for (const result of results) {
         const params = {
             TableName: process.env.CUSTOMER_FEEDBACK_TABLE,
@@ -44,7 +44,6 @@ async function computeSentiment(event, context) {
             console.error(error)
             throw new httpErrors.InternalServerError(error)
         }
-
     }
 
     return {
