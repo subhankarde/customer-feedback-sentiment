@@ -19,5 +19,6 @@ datetime,account_number,language_code,text
 
 ## Future enhancement
 
+- Move the DynamoDB Put request from computeSentiment Lambda function to Step Functions
 - Generate customer sentiment from the call recording with the IVR
 - Use AWS Transcribe to convert it into text and then use the above flow
