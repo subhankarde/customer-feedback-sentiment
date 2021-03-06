@@ -5,7 +5,7 @@ import _ from 'lodash'
 const s3 = new AWS.S3();
 const oldSuffix = '.csv';
 async function readFeedback(event, context) {
-    console.log(event);
+    
     const params = {
         Bucket: event.bucketName,
         Key: event.fileName
@@ -13,7 +13,6 @@ async function readFeedback(event, context) {
     const stream = s3.getObject(params).createReadStream();
     const json = await csv().fromStream(stream);
     const groupedData = _.groupBy(json, f => { return f.language_code });
-    console.log(groupedData);
     const newSuffix = '_' + Date.now() + '.csv';
 
     const destiantionBucket = 'sentiment-analysis-serverless-destination';
