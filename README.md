@@ -1,4 +1,6 @@
-## Customer feedback sentiment analysis using AWS Comprehend, Lambda orchestrated by Step Function build with Serverless Framework. The results are stored in DynamoDB
+## Customer Feedback Sentiment Analysis
+
+### AWS Comprehend, Lambda orchestrated by Step Function build with Serverless Framework. The results are stored in DynamoDB
 
 - The user uploads a CSV file with the feedback to S3
 - There are two language EN & ES in which the customer had given their feedback
