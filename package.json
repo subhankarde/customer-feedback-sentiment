@@ -1,8 +1,8 @@
 {
   "name": "sentiment-analysis-serverless",
   "version": "1.0.0",
-  "description": "Codingly template for Serverless Framework projects",
-  "author": "Ariel Weinberger <ariel@codingly.io>",
+  "description": "Sentiment Analysis",
+  "author": "de.subhankar@live.com",
   "license": "MIT",
   "devDependencies": {
     "babel-core": "^6.25.0",
